@@ -18,17 +18,17 @@ impl<'a> SlackClient<'a> {
         let post_body = json!({
           "channel": self.config.slack_channel,
           "text": text,
-          "blocks":[{"type": "section", "text": {"type": "mrkdwn", "text": text}}],
+          "blocks": [{"type": "section", "text": {"type": "mrkdwn", "text": text}}],
+          "unfurl_links": false,
         });
-        println!("Request Param: {}", post_body);
 
-        let resp = client
+        client
             .post(url)
             .bearer_auth(&self.config.slack_bot_token)
             .json(&post_body)
             .send()
             .await?;
-        println!("Response: {:#?}", resp);
+
         Ok(())
     }
 }
