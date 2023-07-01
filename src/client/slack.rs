@@ -1,6 +1,7 @@
 use serde_json::json;
 
 use crate::model::config::Config;
+use anyhow::Result;
 
 pub struct SlackClient<'a> {
     config: &'a Config,
@@ -11,7 +12,7 @@ impl<'a> SlackClient<'a> {
         Self { config }
     }
 
-    pub async fn post_message(&self, text: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn post_message(&self, text: String) -> Result<()> {
         let client = reqwest::Client::new();
         let url = "https://slack.com/api/chat.postMessage";
 

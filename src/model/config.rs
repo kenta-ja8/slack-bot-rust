@@ -1,3 +1,4 @@
+use anyhow::{Result};
 use dotenv::dotenv;
 use std::env;
 
@@ -10,7 +11,7 @@ pub struct Config {
     pub platform: String,
 }
 
-pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
+pub fn load_config() -> Result<Config> {
     let _ = dotenv();
     let config = Config {
         arxiv_query: env::var("ARXIV_QUERY")

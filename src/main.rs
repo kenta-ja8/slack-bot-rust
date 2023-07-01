@@ -1,13 +1,15 @@
 mod client;
 mod model;
 
-async fn execute() -> Result<(), Box<dyn std::error::Error>> {
+use anyhow::Result;
+
+async fn execute() -> Result<()> {
     let config = model::config::load_config()?;
     let arxiv = client::arxiv::ArxivClient::new(&config);
     let openapi = client::openapi::OpenAiClient::new(&config);
     let slack = client::slack::SlackClient::new(&config);
 
-    let papers = arxiv.search_yesterday_paper().await?;
+    let papers = arxiv.search_past_24_to_48_hours().await?;
     if papers.len() == 0 {
         println!("not found paper");
         return Ok(());
@@ -23,8 +25,10 @@ async fn execute() -> Result<(), Box<dyn std::error::Error>> {
             ))
             .await?;
         slack_msg.push_str(&format!("*<{} | {}>*\n", p.url, p.title));
-        slack_msg.push_str(&answer);
-        slack_msg.push_str("---\n\n");
+        slack_msg.push_str(&format!("{}\n", &answer));
+        slack_msg.push_str(
+            "-------------------------------------------------------------------------------\n\n",
+        );
     }
     slack_msg.push_str(&format!(
         "_Powered by ChatGPT  / Running on {}_\n",
@@ -42,7 +46,8 @@ async fn main() {
     match execute().await {
         Ok(_) => (),
         Err(e) => {
-            eprintln!("Error: {}", e);
+            eprintln!("Error: {:?}", e);
+            e.backtrace();
             std::process::exit(1);
         }
     };

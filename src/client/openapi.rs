@@ -1,3 +1,4 @@
+use anyhow::Result;
 use async_openai::{
     config::OpenAIConfig,
     types::{ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs, Role},
@@ -15,7 +16,7 @@ impl<'a> OpenAiClient<'a> {
         Self { config }
     }
 
-    pub async fn chat(&self, text: String) -> Result<String, Box<dyn std::error::Error>> {
+    pub async fn chat(&self, text: String) -> Result<String> {
         let config = OpenAIConfig::new().with_api_key(&self.config.openai_api_key);
 
         let client = Client::with_config(config);

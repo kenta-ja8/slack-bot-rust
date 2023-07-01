@@ -4,8 +4,8 @@ COPY . .
 RUN cargo install --path .
 
 FROM debian:bullseye-slim
+ENV RUST_BACKTRACE=1
 WORKDIR /opt/app_name
-# RUN apt-get update && apt-get install -y extra-runtime-dependencies && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates && \

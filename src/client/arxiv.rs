@@ -1,5 +1,6 @@
 use crate::model::config::Config;
 use crate::model::paper::PaperModel;
+use anyhow::Result;
 use arxiv::ArxivQueryBuilder;
 use chrono::{DateTime, Duration, Utc};
 
@@ -12,26 +13,20 @@ impl<'a> ArxivClient<'a> {
         Self { config }
     }
 
-    pub async fn search_yesterday_paper(
-        &self,
-    ) -> Result<Vec<PaperModel>, Box<dyn std::error::Error>> {
-        let duration_in_days = 1;
+    pub async fn search_past_24_to_48_hours(&self) -> Result<Vec<PaperModel>> {
         let max_paper = 2;
 
         let query = ArxivQueryBuilder::new()
             .search_query(&self.config.arxiv_query)
             .start(0)
-            .max_results(30)
+            .max_results(50)
             .sort_by("submittedDate")
             .build();
         let arxivs = arxiv::fetch_arxivs(query).await?;
 
         let now = Utc::now().naive_utc();
-        let start_of_today = now
-            .date()
-            .and_hms_opt(0, 0, 0)
-            .ok_or("Failed to create date.")?;
-        let start_of_yesterday = start_of_today - Duration::days(duration_in_days);
+        let date_24h_ago = now - Duration::days(1);
+        let date_48h_ago = date_24h_ago - Duration::days(1);
 
         let mut papers = vec![];
         for arxiv in arxivs {
@@ -39,9 +34,7 @@ impl<'a> ArxivClient<'a> {
                 break;
             }
             let published = DateTime::parse_from_rfc3339(&arxiv.published)?;
-            if !(start_of_yesterday <= published.naive_utc()
-                && published.naive_utc() < start_of_today)
-            {
+            if published.naive_utc() < date_48h_ago || date_24h_ago <= published.naive_utc() {
                 continue;
             }
             papers.push(PaperModel {
