@@ -5,7 +5,7 @@ use async_openai::{
     Client,
 };
 
-use crate::model::config::Config;
+use crate::model::{config::Config, openai::Engine};
 
 pub struct OpenAiClient<'a> {
     config: &'a Config,
@@ -16,14 +16,14 @@ impl<'a> OpenAiClient<'a> {
         Self { config }
     }
 
-    pub async fn chat(&self, text: String) -> Result<String> {
+    pub async fn chat(&self, text: String, model_name: &Engine) -> Result<String> {
         let config = OpenAIConfig::new().with_api_key(&self.config.openai_api_key);
 
         let client = Client::with_config(config);
 
         let request = CreateChatCompletionRequestArgs::default()
             .max_tokens(1024u16)
-            .model("gpt-3.5-turbo")
+            .model(model_name.to_string())
             .messages([
                 ChatCompletionRequestMessageArgs::default()
                     .role(Role::System)

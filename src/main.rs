@@ -15,26 +15,18 @@ async fn execute() -> Result<()> {
         return Ok(());
     }
 
-    let prompt_prefix= "あなたは情報教育、テクノロジーに詳しい教師です。次の論文を、タイトルと要約の2点を専門用語を使わず、簡素で平易な日本語で説明してください。出力は箇条書きでお願いします。\n";
-    let mut slack_msg = String::new();
-    for p in papers {
-        let answer = openapi
-            .chat(format!(
-                "{}title:{}\nsummary:{}",
-                prompt_prefix, p.title, p.summary
-            ))
-            .await?;
-        slack_msg.push_str(&format!("*<{} | {}>*\n", p.url, p.title));
-        slack_msg.push_str(&format!("{}\n", &answer));
-        slack_msg.push_str(
-            "-------------------------------------------------------------------------------\n\n",
-        );
-    }
-    slack_msg.push_str(&format!(
-        "_Powered by ChatGPT  / Running on {}_\n",
+    let prompt_prefix= "あなたは情報教育、テクノロジーに詳しい教師です。次の論文を、タイトルと要約の2点を専門用語を使わず、簡素で平易な日本語で説明してください。要約の出力は箇条書きでお願いします。\n";
+    let engine = model::openai::Engine::Gpt4;
+    let info = format!(
+        "Powered by {}  / Running on {}\n",
+        engine.to_string(),
         config.platform
-    ));
-    slack.post_message(slack_msg).await?;
+    );
+    for p in papers {
+        let prompt = format!("{}title:{}\nsummary:{}", prompt_prefix, p.title, p.summary);
+        let answer = openapi.chat(prompt, &engine).await?;
+        slack.post_message(&p, &answer, &info).await?;
+    }
 
     Ok(())
 }
