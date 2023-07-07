@@ -1,4 +1,4 @@
-use anyhow::{Result};
+use anyhow::Result;
 use dotenv::dotenv;
 use std::env;
 

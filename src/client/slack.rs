@@ -1,6 +1,10 @@
 use serde_json::json;
 
-use crate::model::{config::Config, paper::PaperModel};
+use crate::model::{
+    config::Config,
+    openai::{Engine, PaperSummaryModel},
+    paper::PaperModel,
+};
 use anyhow::Result;
 
 pub struct SlackClient<'a> {
@@ -15,21 +19,32 @@ impl<'a> SlackClient<'a> {
     pub async fn post_message(
         &self,
         paper: &PaperModel,
-        summary: &str,
-        info: &str,
+        answer: &PaperSummaryModel,
+        engine: &Engine,
     ) -> Result<()> {
         let client = reqwest::Client::new();
         let url = "https://slack.com/api/chat.postMessage";
+
+        let mut text = format!("*{}*\n", answer.title);
+        for s in &answer.summary {
+            text.push_str(&format!(" • {}\n", s));
+        }
+
+        let info = format!(
+            "Powered by {}  / Running on {}\n",
+            engine.to_string(),
+            &self.config.platform
+        );
 
         let post_body = json!({
           "channel": self.config.slack_channel,
           "attachments": [
             {
               "mrkdwn_in": ["text"],
-              "color": "#dddddd;",
+              "color": "#3560a6",
               "title": paper.title,
               "title_link": paper.url,
-              "text": summary,
+              "text": text,
               "footer": info,
             }
          ]
