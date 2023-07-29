@@ -25,11 +25,10 @@ impl<'a> OpenAiClient<'a> {
         paper: &PaperModel,
         engine: &Engine,
     ) -> Result<PaperSummaryModel> {
-        let prompt_prefix= "あなたは情報教育、テクノロジーに詳しい教師です。次の論文を、専門用語を使わず簡素で平易な日本語で説明してください。\n";
-        let prompt = format!(
-            "{}title:{}\nsummary:{}",
-            prompt_prefix, paper.title, paper.summary
-        );
+        let system_prompt = "
+            You are a teacher with expertise in information education and technology.
+            Explain the following a paper in simple, plain, jargon-free Japanese. Do not use English.".trim();
+        let user_prompt = format!("title:{}\nsummary:{}", paper.title, paper.summary);
 
         let config = OpenAIConfig::new().with_api_key(&self.config.openai_api_key);
         let client = Client::with_config(config);
@@ -39,26 +38,26 @@ impl<'a> OpenAiClient<'a> {
             .messages([
                 ChatCompletionRequestMessageArgs::default()
                     .role(Role::System)
-                    .content("You are a helpful assistant.")
+                    .content(system_prompt)
                     .build()?,
                 ChatCompletionRequestMessageArgs::default()
                     .role(Role::User)
-                    .content(prompt)
+                    .content(user_prompt)
                     .build()?,
             ])
             .functions([ChatCompletionFunctionsArgs::default()
                 .name("get_title_and_summary")
-                .description("論文の内容を受け取り、整形して出力する。")
+                .description("日本語で記述されたの論文の内容を受け取り、整形して出力する。")
                 .parameters(json!({
                     "type": "object",
                     "properties": {
                         "title": {
                             "type": "string",
-                            "description": "和訳された論文のタイトル。",
+                            "description": "日本語で記述された論文のタイトル。",
                         },
                         "summary": {
                             "type": "array",
-                            "description": "和訳された論文の要約文。一つの要素は、要約文全てを箇条書きで表現した際の一文となる。",
+                            "description": "日本語で記述された論文の要約文。一つの要素は、要約文全てを箇条書きで表現した際の一文となる。",
                             "items" : {
                               "type": "string",
                             },

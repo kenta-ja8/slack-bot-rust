@@ -9,7 +9,7 @@ async fn execute() -> Result<()> {
     let openai = client::openai::OpenAiClient::new(&config);
     let slack = client::slack::SlackClient::new(&config);
 
-    let papers = arxiv.search_past_24_to_48_hours().await?;
+    let papers = arxiv.search_past_5_to_6_days().await?;
     if papers.len() == 0 {
         println!("not found paper");
         return Ok(());
