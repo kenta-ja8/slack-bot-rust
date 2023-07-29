@@ -19,7 +19,7 @@ impl<'a> ArxivClient<'a> {
         let query = ArxivQueryBuilder::new()
             .search_query(&self.config.arxiv_query)
             .start(0)
-            .max_results(100)
+            .max_results(300)
             .sort_by("submittedDate")
             .build();
         let arxivs = arxiv::fetch_arxivs(query).await?;

@@ -2,7 +2,7 @@ use anyhow::Result;
 use dotenv::dotenv;
 use std::env;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Config {
     pub arxiv_query: String,
     pub openai_api_key: String,
