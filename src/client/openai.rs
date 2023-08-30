@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Error, Result};
 use async_openai::types::ChatCompletionFunctionsArgs;
 use async_openai::{
@@ -11,12 +13,12 @@ use crate::model::openai::PaperSummaryModel;
 use crate::model::paper::PaperModel;
 use crate::model::{config::Config, openai::Engine};
 
-pub struct OpenAiClient<'a> {
-    config: &'a Config,
+pub struct OpenAiClient {
+    config: Arc<Config>,
 }
 
-impl<'a> OpenAiClient<'a> {
-    pub fn new(config: &'a Config) -> Self {
+impl<'a> OpenAiClient {
+    pub fn new(config: Arc<Config>) -> Self {
         Self { config }
     }
 

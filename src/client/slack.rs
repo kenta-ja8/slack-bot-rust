@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use serde_json::json;
 
 use crate::model::{
@@ -7,12 +9,12 @@ use crate::model::{
 };
 use anyhow::Result;
 
-pub struct SlackClient<'a> {
-    config: &'a Config,
+pub struct SlackClient {
+    config: Arc<Config>,
 }
 
-impl<'a> SlackClient<'a> {
-    pub fn new(config: &'a Config) -> Self {
+impl<'a> SlackClient {
+    pub fn new(config: Arc<Config>) -> Self {
         Self { config }
     }
 

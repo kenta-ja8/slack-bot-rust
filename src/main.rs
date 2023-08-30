@@ -1,13 +1,17 @@
 mod client;
 mod model;
 
+use std::sync::Arc;
+
 use anyhow::Result;
 use futures::future::join_all;
 use tokio::task;
 
 async fn execute() -> Result<()> {
-    let config = model::config::load_config()?;
-    let arxiv = client::arxiv::ArxivClient::new(&config);
+    let config = Arc::new(model::config::load_config()?);
+    let openai = Arc::new(client::openai::OpenAiClient::new(Arc::clone(&config)));
+    let slack = Arc::new(client::slack::SlackClient::new(Arc::clone(&config)));
+    let arxiv = Arc::new(client::arxiv::ArxivClient::new(Arc::clone(&config)));
 
     let papers = arxiv.search_past_5_to_6_days().await?;
     if papers.is_empty() {
@@ -18,11 +22,10 @@ async fn execute() -> Result<()> {
     let handles = papers
         .into_iter()
         .map(|p| {
-            let config = config.clone();
+            let openai = Arc::clone(&openai);
+            let slack = Arc::clone(&slack);
             task::spawn(async move {
                 // println!("start spawn");
-                let openai = client::openai::OpenAiClient::new(&config);
-                let slack = client::slack::SlackClient::new(&config);
 
                 let engine = model::openai::Engine::Gpt4;
                 let paper_summary = openai.summarize_paper(&p, &engine).await?;
@@ -33,12 +36,11 @@ async fn execute() -> Result<()> {
         })
         .collect::<Vec<_>>();
 
-    let results: Result<Vec<_>> = join_all(handles)
+    join_all(handles)
         .await
         .into_iter()
         .map(|res| res.map_err(anyhow::Error::from).and_then(|x| x))
-        .collect();
-    results?;
+        .collect::<Result<Vec<_>>>()?;
 
     Ok(())
 }

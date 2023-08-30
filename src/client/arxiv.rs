@@ -1,15 +1,17 @@
+use std::sync::Arc;
+
 use crate::model::config::Config;
 use crate::model::paper::PaperModel;
 use anyhow::Result;
 use arxiv::ArxivQueryBuilder;
 use chrono::{DateTime, Duration, Utc};
 
-pub struct ArxivClient<'a> {
-    config: &'a Config,
+pub struct ArxivClient {
+    config: Arc<Config>,
 }
 
-impl<'a> ArxivClient<'a> {
-    pub fn new(config: &'a Config) -> Self {
+impl<'a> ArxivClient {
+    pub fn new(config: Arc<Config>) -> Self {
         Self { config }
     }
 
