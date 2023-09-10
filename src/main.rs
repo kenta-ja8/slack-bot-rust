@@ -1,46 +1,33 @@
 mod client;
 mod model;
+mod usecase;
 
 use std::sync::Arc;
 
 use anyhow::Result;
-use futures::future::join_all;
-use tokio::task;
 
 async fn execute() -> Result<()> {
     let config = Arc::new(model::config::load_config()?);
-    let openai = Arc::new(client::openai::OpenAiClient::new(Arc::clone(&config)));
-    let slack = Arc::new(client::slack::SlackClient::new(Arc::clone(&config)));
-    let arxiv = Arc::new(client::arxiv::ArxivClient::new(Arc::clone(&config)));
+    let openai_client = Arc::new(client::openai::OpenAiClient::new(Arc::clone(&config)));
+    let slack_client = Arc::new(client::slack::SlackClient::new(Arc::clone(&config)));
+    let bigquery_client = Arc::new(client::bigquery::BigqueryClient::new(Arc::clone(&config)));
+    let arxiv_client = Arc::new(client::arxiv::ArxivClient::new(Arc::clone(&config)));
 
-    let papers = arxiv.search_past_5_to_6_days().await?;
-    if papers.is_empty() {
-        println!("not found paper");
-        return Ok(());
+    let paper_usecase = Arc::new(usecase::paper::PaperUsecase::new(
+        Arc::clone(&slack_client),
+        Arc::clone(&arxiv_client),
+        Arc::clone(&openai_client),
+    ));
+    let cost_notification_usecase = Arc::new(usecase::cost::CostUsecase::new(
+        Arc::clone(&slack_client),
+        Arc::clone(&bigquery_client),
+    ));
+
+    match config.cmd.as_str() {
+        "notify_paper" => paper_usecase.notify_paper().await?,
+        "notify_daily_cost" => cost_notification_usecase.notify_daily_cost().await?,
+        cmd => Err(anyhow::anyhow!("Unknown command: {}", cmd))?,
     }
-
-    let handles = papers
-        .into_iter()
-        .map(|p| {
-            let openai = Arc::clone(&openai);
-            let slack = Arc::clone(&slack);
-            task::spawn(async move {
-                // println!("start spawn");
-
-                let engine = model::openai::Engine::Gpt4;
-                let paper_summary = openai.summarize_paper(&p, &engine).await?;
-                slack.post_message(&p, &paper_summary, &engine).await?;
-                // println!("end spawn");
-                Ok::<(), anyhow::Error>(())
-            })
-        })
-        .collect::<Vec<_>>();
-
-    join_all(handles)
-        .await
-        .into_iter()
-        .map(|res| res.map_err(anyhow::Error::from).and_then(|x| x))
-        .collect::<Result<Vec<_>>>()?;
 
     Ok(())
 }
